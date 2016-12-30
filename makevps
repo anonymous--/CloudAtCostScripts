@@ -1,0 +1,77 @@
+#!/bin/bash
+email="change_me@to.your_email"
+#above is your registered email address with cloudatcost
+
+api="chame_me_to_your_super_cool_api_key"
+#above is your api key for cloudatcost
+
+cpu="chane_me_to_a_cpu_number"
+#above is the total cpus you want to use to create a vps
+
+ram="change_me_to_ram_amount_in_mb"
+#above is the total amount of ram you want to use to create a VPS
+
+os="change_me_to_an_os_number_below"
+#above is the OS type you want to make 
+#1,CentOS 6.7 64bit
+#3,Debian-8-64bit
+#9,Windows 7 64bit
+#24,Windows 2008 R2 64bit
+#25,Windows 2012 R2 64bit
+#26,CentOS-7-64bit
+#27,Ubuntu-14.04.1-LTS-64bit
+#74,FreeBSD-10-1-64bit
+
+storage="change_me_to_storage_amount_in_gb"
+#above is the amount of storage you want to use in gb type you want to make 
+
+datacentern="change_me_to_your_desired_datacenter_number"
+#above is datacenter you want to use "not sure if this works but worth a try".
+
+tcpus="change_me_to_the_amount_of_cpus_you_have_before_you_run_this_script"
+#above is the amount of cpus you should have before your VPS is built
+
+waittime="30"
+# how long in seconds before retrying to make the vps
+
+acpus=$(curl -s "https://panel.cloudatcost.com/api/v1/cloudpro/resources.php?key=$api&login=$email" | sed 's%,% %g' | sed 's%"% %g' | sed 's%  % %g' | awk '{print $19}')
+# the above command is for the available cpus
+
+checkcpus=$( curl -s "https://panel.cloudatcost.com/api/v1/cloudpro/resources.php?key=$api&login=$email"  | sed 's%,% %g' | sed 's%"% %g' | sed 's%  % %g'  | awk '{print $30}' |sed 's%:%%g')
+#the above command tells us the amount of cpus being used
+
+warning="1"
+
+while [[ $acpu < $checkcpus || $checkcpus == "null"  ]] && [ $warning != "1" ]; do
+		if [ $acpu < $checkcpus ]; then
+	                makeit=$(curl -s --data "datecenter=$datacentern&key=$api&login=$email&cpu=$cpu&ram=$ram&storage=$storage&os=$os" https://panel.cloudatcost.com/api/v1/cloudpro/build.php | awk '{print $3}')
+        	                if  [[ $makeit == "Failed" || $makeit == "Error" ]];
+               		 then
+                        	echo " "
+                        	echo "Sorry it failed, trying again"
+                        	echo " "
+                	else
+                        	echo " "
+                        	echo "Success, your server should be build"
+                        	echo " "
+                fi
+			else
+			#	exit
+				fi
+                	sleep $waittime
+	done
+if  [[ $acpus > $tcpus || $warning == "0" ]]; then
+      echo "Sorry either server is already built or something else really bad happened. But most likely you don't have enough resources."
+fi
+
+if [ $warning == "1" ]; then
+echo -e ''
+Please read the following.
+I am not responsible if you get banned for using this script. Nor am I responsible if somehow this script does any harm to your computer.
+This script is in beta please beware that it may not work or give you a false positive. you are allowed to modify and edit this script as you wish.
+to allow this script to work please change
+warning=0 to warnong=0
+but beware by doing so, you are doing this at your own risk and I am not responsible for what happens.
+
+note currently the script wont stop until it has used up all averrable resources.''
+fi
