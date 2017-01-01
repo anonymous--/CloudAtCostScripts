@@ -1,4 +1,5 @@
 #!/bin/bash
+cd "$(dirname "$0")"
 email="change_me@to.your_email"
 #above is your registered email address with cloudatcost
 
@@ -34,32 +35,39 @@ tcpus="change_me_to_the_amount_of_cpus_you_have_before_you_run_this_script"
 waittime="30"
 # how long in seconds before retrying to make the vps
 
-acpus=$(curl -s "https://panel.cloudatcost.com/api/v1/cloudpro/resources.php?key=$api&login=$email" | sed 's%,% %g' | sed 's%"% %g' | sed 's%  % %g' | awk '{print $19}')
+curl -s "https://panel.cloudatcost.com/api/v1/cloudpro/resources.php?key=$api&login=$email" >vps_info_script
+
+#acpus=$(curl -s "https://panel.cloudatcost.com/api/v1/cloudpro/resources.php?key=$api&login=$email" | sed 's%,% %g' | sed 's%"% %g' | sed 's%  % %g' | awk '{print $19}')
+acpus=$(cat vps_info_script | sed 's%,% %g' | sed 's%"% %g' | sed 's%  % %g' | awk '{print $19}' | sed 's% %%g')
 # the above command is for the available cpus
 
-checkcpus=$( curl -s "https://panel.cloudatcost.com/api/v1/cloudpro/resources.php?key=$api&login=$email"  | sed 's%,% %g' | sed 's%"% %g' | sed 's%  % %g'  | awk '{print $30}' |sed 's%:%%g')
+#checkcpus=$( curl -s "https://panel.cloudatcost.com/api/v1/cloudpro/resources.php?key=$api&login=$email"  | sed 's%,% %g' | sed 's%"% %g' | sed 's%  % %g'  | awk '{print $30}' |sed 's%:%%g')
+checkcpus=$(cat vps_info_script | sed 's%,% %g' | sed 's%"% %g' | sed 's%  % %g'  | awk '{print $30}' |sed 's%:%%g' | sed 's% %%g') 
+if [ $checkcpus == "null" ]; then
+checkcpus="0"
+fi
 #the above command tells us the amount of cpus being used
 
-warning="1"
+warning="0"
 
-while [[ $acpu < $checkcpus || $checkcpus == "null"  ]] && [ $warning != "1" ]; do
-		if [ $acpu < $checkcpus ]; then
-	                makeit=$(curl -s --data "datecenter=$datacentern&key=$api&login=$email&cpu=$cpu&ram=$ram&storage=$storage&os=$os" https://panel.cloudatcost.com/api/v1/cloudpro/build.php | awk '{print $3}')
-        	                if  [[ $makeit == "Failed" || $makeit == "Error" ]];
-               		 then
-                        	echo " "
-                        	echo "Sorry it failed, trying again"
-                        	echo " "
-                	else
-                        	echo " "
-                        	echo "Success, your server should be build"
-                        	echo " "
+while [[ $acpu < '$checkcpus' ]] && [[ $warning != "1" ]]; do
+                if [[ $acpu < $checkcpus ]]; then
+                        makeit=$(curl -s --data "datecenter=$datacentern&key=$api&login=$email&cpu=$cpu&ram=$ram&storage=$storage&os=$os" https://panel.cloudatcost.com/api/v1/cloudpro/build.php | awk '{print $3}')
+                                if  [[ $makeit == "Failed" || $makeit == "Error" ]];
+                         then
+                                echo " "
+                                echo "Sorry it failed, trying again"
+                                echo " "
+                        else
+                                echo " "
+                                echo "Success, your server should be build"
+                                echo " "
                 fi
-			else
-			#	exit
-				fi
-                	sleep $waittime
-	done
+                        else
+                                exit
+                                fi
+                        sleep $waittime
+        done
 if  [[ $acpus > $tcpus || $warning == "0" ]]; then
       echo "Sorry either server is already built or something else really bad happened. But most likely you don't have enough resources."
 fi
